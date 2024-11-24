@@ -173,7 +173,7 @@ contract Viceroy is Deployer {
             "exec(address,bytes,uint256)",
             receiver,
             bytes(""),
-            address(governance).balance
+            address(governance.communityWallet()).balance
         );
         governance.createProposal(address(this), proposalData);
         return uint256(keccak256(proposalData));

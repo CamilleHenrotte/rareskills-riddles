@@ -15,6 +15,12 @@ describe(NAME, function () {
         const VulnerableDeFiFactory = await ethers.getContractFactory("VulnerableDeFiContract");
         const vulnerableDeFiContract = await VulnerableDeFiFactory.deploy(readOnlyContract.address);
 
+        const DefiAttackerFactory = await ethers.getContractFactory("DefiAttacker");
+        const defiAttackerContract = await DefiAttackerFactory.deploy(
+            vulnerableDeFiContract.address,
+            readOnlyContract.address
+        );
+
         await readOnlyContract.addLiquidity({
             value: ethers.utils.parseEther("100"),
         });
@@ -31,18 +37,23 @@ describe(NAME, function () {
             readOnlyContract,
             vulnerableDeFiContract,
             attackerWallet,
+            defiAttackerContract,
         };
     }
 
     describe("exploit", async function () {
-        let readOnlyContract, vulnerableDeFiContract, attackerWallet;
+        let readOnlyContract, vulnerableDeFiContract, defiAttackerContract, attackerWallet;
         before(async function () {
-            ({ readOnlyContract, vulnerableDeFiContract, attackerWallet } = await loadFixture(setup));
+            ({ readOnlyContract, vulnerableDeFiContract, defiAttackerContract, attackerWallet } = await loadFixture(
+                setup
+            ));
         });
 
         // prettier-ignore
         it("conduct your attack here", async function () {
-    
+          
+            defiAttackerContract.connect(attackerWallet).attack({value: ethers.utils.parseEther("1")});
+           
     });
 
         after(async function () {
