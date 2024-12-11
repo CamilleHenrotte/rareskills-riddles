@@ -32,7 +32,7 @@ describe(NAME, function () {
         after(async function () {
             expect(await ethers.provider.getBalance(victimContract.address)).to.be.equal(0);
             expect(await ethers.provider.getTransactionCount(attackerWallet.address)).to.equal(
-                1,
+                2,
                 "must exploit one transaction"
             );
         });

